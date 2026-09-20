@@ -1,0 +1,38 @@
+name: Build and publish APK
+
+on:
+  push:
+    tags: ["stream-fusion-tv-v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+      - uses: android-actions/setup-android@v3
+      - name: Restore signing key
+        run: echo "$FUSION_KEYSTORE_BASE64" | base64 --decode > streamfusion.keystore
+        env:
+          FUSION_KEYSTORE_BASE64: ${{ secrets.FUSION_KEYSTORE_BASE64 }}
+      - name: Build signed release
+        run: ./gradlew assembleRelease
+        env:
+          FUSION_KEYSTORE_FILE: ${{ github.workspace }}/streamfusion.keystore
+          FUSION_KEYSTORE_PASSWORD: ${{ secrets.FUSION_KEYSTORE_PASSWORD }}
+          FUSION_KEY_ALIAS: ${{ secrets.FUSION_KEY_ALIAS }}
+          FUSION_KEY_PASSWORD: ${{ secrets.FUSION_KEY_PASSWORD }}
+      - name: Name APK
+        run: cp app/build/outputs/apk/release/app-release.apk StreamFusionTV-${GITHUB_REF_NAME}.apk
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: StreamFusionTV-${{ github.ref_name }}.apk
+          generate_release_notes: true
