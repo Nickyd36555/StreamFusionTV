@@ -26,9 +26,9 @@ class TiviGuideLayout(
     private val programTime=TextView(context)
     private val programDescription=TextView(context)
     private val channelGroup=TextView(context)
-    private val slotWidth=260
-    private val rowHeight=78
-    private val channelWidth=360
+    private val slotWidth=210
+    private val rowHeight=58
+    private val channelWidth=280
     private val startTime=(System.currentTimeMillis()/1_800_000L)*1_800_000L
     private val guideEnd=startTime+9*1_800_000L
     private val programmesByChannel=programmes.asSequence()
@@ -38,9 +38,9 @@ class TiviGuideLayout(
 
     init{
         orientation=VERTICAL
-        setBackgroundColor(Color.rgb(18,25,29))
-        addView(topPanel(),LayoutParams(-1,dp(245)))
-        val header=LinearLayout(context).apply{orientation=HORIZONTAL;setBackgroundColor(Color.rgb(56,73,82))}
+        setBackgroundColor(Color.rgb(11,10,13))
+        addView(topPanel(),LayoutParams(-1,dp(176)))
+        val header=LinearLayout(context).apply{orientation=HORIZONTAL;setBackgroundColor(Color.rgb(42,28,36))}
         header.addView(TextView(context).apply{text=SimpleDateFormat("EEE, MMM d, HH:mm",Locale.getDefault()).format(Date());setTextColor(Color.rgb(145,205,245));textSize=18f;gravity=Gravity.CENTER_VERTICAL;setPadding(dp(18),0,0,0);setTypeface(typeface,Typeface.BOLD)},LayoutParams(dp(channelWidth),dp(48)))
         val timeScroll=HorizontalScrollView(context).apply{isHorizontalScrollBarEnabled=false;addView(timeRuler())}
         header.addView(timeScroll,LayoutParams(0,dp(48),1f));addView(header)
@@ -59,8 +59,8 @@ class TiviGuideLayout(
     }
 
     private fun topPanel():View{
-        val root=LinearLayout(context).apply{orientation=HORIZONTAL;setPadding(dp(20),dp(14),dp(20),dp(12));setBackgroundColor(Color.rgb(18,25,29))}
-        preview.scaleType=ImageView.ScaleType.CENTER_CROP;preview.setBackgroundColor(Color.rgb(30,39,44));root.addView(preview,LayoutParams(dp(390),-1))
+        val root=LinearLayout(context).apply{orientation=HORIZONTAL;setPadding(dp(18),dp(12),dp(18),dp(10));setBackgroundColor(Color.rgb(11,10,13))}
+        preview.scaleType=ImageView.ScaleType.FIT_CENTER;preview.setPadding(dp(12),dp(12),dp(12),dp(12));preview.setBackgroundColor(Color.rgb(20,16,20));root.addView(preview,LayoutParams(dp(280),-1))
         val details=LinearLayout(context).apply{orientation=VERTICAL;setPadding(dp(24),dp(12),dp(12),0)}
         programTitle.apply{setTextColor(Color.WHITE);textSize=27f;setTypeface(typeface,Typeface.BOLD);text="Choose a program"}
         programTime.apply{setTextColor(Color.rgb(155,162,168));textSize=17f;setPadding(0,dp(9),0,dp(8))}
@@ -77,15 +77,15 @@ class TiviGuideLayout(
     }
 
     private fun channelColumn():View{
-        val column=LinearLayout(context).apply{orientation=VERTICAL;setBackgroundColor(Color.rgb(37,50,57))}
-        channels.forEachIndexed{index,channel->column.addView(TextView(context).apply{text=(index+1).toString()+"     "+channel.name;setTextColor(Color.WHITE);textSize=18f;gravity=Gravity.CENTER_VERTICAL;setPadding(dp(18),0,dp(10),0);setTypeface(typeface,Typeface.BOLD);setBackgroundColor(Color.rgb(37,50,57))},LayoutParams(-1,dp(rowHeight)))}
+        val column=LinearLayout(context).apply{orientation=VERTICAL;setBackgroundColor(Color.rgb(26,17,22))}
+        channels.forEachIndexed{index,channel->column.addView(TextView(context).apply{text=(index+1).toString()+"    "+channel.name;setTextColor(Color.WHITE);textSize=15f;gravity=Gravity.CENTER_VERTICAL;setPadding(dp(14),0,dp(8),0);setTypeface(typeface,Typeface.BOLD);setBackgroundColor(Color.rgb(26,17,22))},LayoutParams(-1,dp(rowHeight)))}
         return column
     }
 
     private fun programGrid():View{
         val column=LinearLayout(context).apply{orientation=VERTICAL}
         channels.forEach{channel->
-            val row=LinearLayout(context).apply{orientation=HORIZONTAL;setBackgroundColor(Color.rgb(17,24,28))}
+            val row=LinearLayout(context).apply{orientation=HORIZONTAL;setBackgroundColor(Color.rgb(11,10,13))}
             val items=programmesByChannel[channel.tvgId].orEmpty()
             var cursor=startTime
             items.forEach{item->
@@ -100,8 +100,8 @@ class TiviGuideLayout(
     }
 
     private fun programButton(channel:Channel,item:Programme)=Button(context).apply{
-        text=item.title;isAllCaps=false;gravity=Gravity.START or Gravity.CENTER_VERTICAL;setTextColor(Color.LTGRAY);textSize=16f;setPadding(dp(14),0,dp(8),0);setBackgroundColor(Color.rgb(17,24,28));isFocusable=true
-        setOnFocusChangeListener{v,focused->v.setBackgroundColor(if(focused)Color.rgb(48,88,105) else Color.rgb(17,24,28));setTextColor(if(focused)Color.WHITE else Color.LTGRAY);if(focused)showDetails(channel,item)}
+        text=item.title;isAllCaps=false;gravity=Gravity.START or Gravity.CENTER_VERTICAL;setTextColor(Color.LTGRAY);textSize=14f;setPadding(dp(12),0,dp(8),0);setBackgroundColor(Color.rgb(27,22,27));isFocusable=true
+        setOnFocusChangeListener{v,focused->v.setBackgroundColor(if(focused)Color.rgb(201,162,74) else Color.rgb(27,22,27));setTextColor(if(focused)Color.rgb(30,20,10) else Color.LTGRAY);if(focused)showDetails(channel,item)}
         setOnClickListener{play(channel)}
     }
 

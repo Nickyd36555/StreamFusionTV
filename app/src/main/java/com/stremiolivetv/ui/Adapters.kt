@@ -20,12 +20,12 @@ import java.util.Date
 class MediaAdapter(private val scope:CoroutineScope,private val items:List<Media>,private val click:(Media)->Unit,private val shelf:Boolean=false):RecyclerView.Adapter<MediaAdapter.Holder>(){
     class Holder(val root:LinearLayout,val poster:ImageView,val name:TextView,val info:TextView):RecyclerView.ViewHolder(root)
     override fun onCreateViewHolder(parent:ViewGroup,type:Int):Holder{
-        val c=parent.context;val root=LinearLayout(c).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(c,7),dp(c,7),dp(c,7),dp(c,14));isFocusable=true;setBackgroundColor(Color.rgb(18,21,29));if(shelf)layoutParams=RecyclerView.LayoutParams(dp(c,160),dp(c,270)).apply{marginEnd=dp(c,8)}}
+        val c=parent.context;val root=LinearLayout(c).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(c,6),dp(c,6),dp(c,6),dp(c,12));isFocusable=true;background=panel(c,Color.rgb(26,17,22),8);if(shelf)layoutParams=RecyclerView.LayoutParams(dp(c,166),dp(c,276)).apply{marginEnd=dp(c,12)}}
         val poster=ImageView(c).apply{scaleType=ImageView.ScaleType.CENTER_CROP;setBackgroundColor(Color.rgb(35,38,48))}
         val name=TextView(c).apply{setTextColor(Color.WHITE);textSize=15f;maxLines=2;setTypeface(typeface,Typeface.BOLD);setPadding(0,dp(c,7),0,0)}
         val info=TextView(c).apply{setTextColor(Color.LTGRAY);textSize=12f}
         root.addView(poster,LinearLayout.LayoutParams(-1,if(shelf)dp(c,205) else dp(c,210)));root.addView(name);root.addView(info)
-        root.setOnFocusChangeListener{v,focused->v.scaleX=if(focused)1.05f else 1f;v.scaleY=if(focused)1.05f else 1f;v.setBackgroundColor(if(focused)Color.rgb(87,61,214) else Color.rgb(18,21,29))}
+        root.setOnFocusChangeListener{v,focused->v.scaleX=if(focused)1.06f else 1f;v.scaleY=if(focused)1.06f else 1f;v.background=panel(c,if(focused)Color.rgb(201,162,74) else Color.rgb(26,17,22),8);name.setTextColor(if(focused)Color.rgb(30,20,10) else Color.WHITE);info.setTextColor(if(focused)Color.rgb(55,39,22) else Color.LTGRAY);v.elevation=if(focused)dp(c,12).toFloat() else 0f}
         return Holder(root,poster,name,info)
     }
     override fun onBindViewHolder(h:Holder,p:Int){val m=items[p];h.name.text=m.name;h.info.text=listOfNotNull(m.year,m.rating?.let{"★ "+it}).joinToString("  ");ImageLoader.load(scope,h.poster,m.poster);h.root.setOnClickListener{click(m)}}
@@ -35,13 +35,13 @@ class MediaAdapter(private val scope:CoroutineScope,private val items:List<Media
 class ChannelAdapter(private val items:List<Channel>,private val guide:List<Programme>,private val play:(Channel)->Unit,private val favorite:(Channel)->Unit,private val selected:(Channel)->Unit={}):RecyclerView.Adapter<ChannelAdapter.Holder>(){
     class Holder(val root:LinearLayout,val name:TextView,val now:TextView):RecyclerView.ViewHolder(root)
     override fun onCreateViewHolder(parent:ViewGroup,type:Int):Holder{
-        val c=parent.context;val root=LinearLayout(c).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(c,18),dp(c,12),dp(c,18),dp(c,12));isFocusable=true;setBackgroundColor(Color.rgb(16,19,26))}
+        val c=parent.context;val root=LinearLayout(c).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(c,18),dp(c,12),dp(c,18),dp(c,12));isFocusable=true;setBackgroundColor(Color.rgb(26,17,22))}
         val name=TextView(c).apply{setTextColor(Color.WHITE);textSize=18f;setTypeface(typeface,Typeface.BOLD)}
         val now=TextView(c).apply{setTextColor(Color.LTGRAY);textSize=14f}
         root.addView(name);root.addView(now)
         return Holder(root,name,now)
     }
-    override fun onBindViewHolder(h:Holder,p:Int){val c=items[p];val time=System.currentTimeMillis();val current=guide.firstOrNull{it.channelId==c.tvgId&&time in it.startMillis until it.stopMillis};h.name.text=c.name;h.now.text=current?.title?:c.group;h.root.setOnFocusChangeListener{v,f->v.setBackgroundColor(if(f)Color.rgb(87,61,214) else Color.rgb(16,19,26));if(f)selected(c)};h.root.setOnClickListener{play(c)};h.root.setOnLongClickListener{favorite(c);true}}
+    override fun onBindViewHolder(h:Holder,p:Int){val c=items[p];val time=System.currentTimeMillis();val current=guide.firstOrNull{it.channelId==c.tvgId&&time in it.startMillis until it.stopMillis};h.name.text=c.name;h.now.text=current?.title?:c.group;h.root.setOnFocusChangeListener{v,f->v.setBackgroundColor(if(f)Color.rgb(201,162,74) else Color.rgb(26,17,22));h.name.setTextColor(if(f)Color.rgb(30,20,10) else Color.WHITE);h.now.setTextColor(if(f)Color.rgb(55,39,22) else Color.LTGRAY);if(f)selected(c)};h.root.setOnClickListener{play(c)};h.root.setOnLongClickListener{favorite(c);true}}
     override fun getItemCount()=items.size
 }
 
@@ -61,3 +61,4 @@ class GuideAdapter(private val rows:List<Pair<Channel,List<Programme>>>,private 
 }
 
 private fun dp(c:android.content.Context,v:Int)=(v*c.resources.displayMetrics.density).toInt()
+private fun panel(c:android.content.Context,color:Int,radius:Int)=android.graphics.drawable.GradientDrawable().apply{setColor(color);cornerRadius=dp(c,radius).toFloat()}

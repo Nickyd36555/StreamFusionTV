@@ -26,6 +26,8 @@ class MainActivity : AppCompatActivity() {
     private val prefs by lazy { getSharedPreferences("stream_fusion", MODE_PRIVATE) }
     private lateinit var body: FrameLayout
     private lateinit var status: TextView
+    private lateinit var nav: LinearLayout
+    private var activeNav: Button? = null
     private var channels = emptyList<Channel>()
     private var programmes = emptyList<Programme>()
 
@@ -39,27 +41,39 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun shell(): View {
-        val root = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(Color.rgb(9,11,16)) }
-        val nav = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity=Gravity.CENTER_HORIZONTAL; setPadding(dp(6),dp(18),dp(6),dp(12)); setBackgroundColor(Color.rgb(14,14,23)) }
-        nav.addView(TextView(this).apply { text="◆"; textSize=27f; gravity=Gravity.CENTER; setTypeface(typeface,Typeface.BOLD); setTextColor(Color.rgb(112,81,255)); setPadding(0,0,0,dp(18)) })
-        listOf<Pair<String,()->Unit>>(
-            "Home" to ::home, "Movies" to { catalog("movie","Movies") },
-            "Series" to { catalog("series","Series") }, "Live TV" to ::guide,
-            "Channels" to ::liveTv, "Search" to ::search, "Library" to ::library,
-            "Settings" to ::settings
-        ).forEach { (name, action) -> nav.addView(Button(this).apply { text=name; textSize=11f; isAllCaps=false; gravity=Gravity.CENTER; setTextColor(Color.LTGRAY); setBackgroundColor(Color.TRANSPARENT); isFocusable=true; setPadding(0,0,0,0); setOnFocusChangeListener{v,f->v.setBackgroundColor(if(f)Color.rgb(55,39,103) else Color.TRANSPARENT);setTextColor(if(f)Color.WHITE else Color.LTGRAY)}; setOnClickListener { action() } },LinearLayout.LayoutParams(-1,dp(58))) }
-        status = TextView(this).apply { text="Ready"; setTextColor(Color.LTGRAY); setPadding(dp(28),dp(7),0,dp(7)); setBackgroundColor(Color.rgb(14,16,22)) }
+        val root = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setBackgroundColor(BG) }
+        nav = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity=Gravity.CENTER_HORIZONTAL; setPadding(dp(8),dp(18),dp(8),dp(12)); setBackgroundColor(SURFACE) }
+        nav.addView(TextView(this).apply { text="SF"; textSize=18f; gravity=Gravity.CENTER; setTypeface(typeface,Typeface.BOLD); setTextColor(ACCENT); background=rounded(Color.rgb(34,27,20),10); setPadding(0,0,0,0) },LinearLayout.LayoutParams(dp(48),dp(48)).apply{bottomMargin=dp(18)})
+        listOf(
+            Triple("⌂","Home",::home), Triple("▣","Movies",{ catalog("movie","Movies") }),
+            Triple("▤","Series",{ catalog("series","Series") }), Triple("▦","Guide",::guide),
+            Triple("▶","Channels",::liveTv), Triple("⌕","Search",::search),
+            Triple("★","Library",::library), Triple("⚙","Settings",::settings)
+        ).forEach { (icon,name,action) ->
+            nav.addView(Button(this).apply {
+                text=icon; contentDescription=name; textSize=22f; isAllCaps=false; gravity=Gravity.CENTER
+                setTextColor(MUTED); background=rounded(Color.TRANSPARENT,8); isFocusable=true; setPadding(0,0,0,0)
+                setOnFocusChangeListener{v,f-> styleNav(v as Button,f || v===activeNav) }
+                setOnClickListener { activeNav?.let{styleNav(it,false)};activeNav=this;styleNav(this,true);status.text=name;action() }
+            },LinearLayout.LayoutParams(dp(52),dp(52)).apply{bottomMargin=dp(8)})
+        }
+        status = TextView(this).apply { text="STREAM FUSION  •  READY"; textSize=12f; letterSpacing=.08f; setTextColor(MUTED); setPadding(dp(28),dp(9),0,dp(7)); setBackgroundColor(BG) }
         body = FrameLayout(this)
         val content=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; addView(status,LinearLayout.LayoutParams(-1,dp(34))); addView(body,LinearLayout.LayoutParams(-1,0,1f)) }
-        root.addView(nav, LinearLayout.LayoutParams(dp(104),-1))
+        root.addView(nav, LinearLayout.LayoutParams(dp(76),-1))
         root.addView(content, LinearLayout.LayoutParams(0,-1,1f))
         return root
     }
 
     private fun home() {
-        val shelves=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(18),dp(12),dp(12),dp(20));background=GradientDrawable(GradientDrawable.Orientation.TL_BR,intArrayOf(Color.rgb(27,18,45),Color.rgb(8,9,15)))}
+        val shelves=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(28),dp(18),dp(18),dp(36));background=GradientDrawable(GradientDrawable.Orientation.TL_BR,intArrayOf(Color.rgb(32,20,16),BG,BG))}
         val scroll=ScrollView(this).apply{addView(shelves)};swap(scroll,"Home")
-        fun addShelf(name:String,items:List<Media>){shelves.addView(title(name,18f).apply{setPadding(dp(6),dp(8),0,dp(8))});shelves.addView(RecyclerView(this).apply{layoutManager=LinearLayoutManager(this@MainActivity,LinearLayoutManager.HORIZONTAL,false);adapter=MediaAdapter(scope,items,::openMedia,true)},LinearLayout.LayoutParams(-1,dp(280)))}
+        val hero=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;gravity=Gravity.BOTTOM;setPadding(dp(30),dp(24),dp(30),dp(24));background=rounded(Color.rgb(27,22,25),14)}
+        hero.addView(TextView(this).apply{text="STREAM FUSION";textSize=12f;letterSpacing=.16f;setTextColor(ACCENT);setTypeface(typeface,Typeface.BOLD)})
+        hero.addView(title("Everything you watch. One screen.",30f).apply{setPadding(0,dp(8),0,dp(4))})
+        hero.addView(copy("Stremio movies and series • Xtream Codes live television"))
+        shelves.addView(hero,LinearLayout.LayoutParams(-1,dp(170)).apply{bottomMargin=dp(22)})
+        fun addShelf(name:String,items:List<Media>){if(items.isEmpty())return;shelves.addView(title(name,19f).apply{setPadding(dp(4),dp(10),0,dp(10))});shelves.addView(RecyclerView(this).apply{layoutManager=LinearLayoutManager(this@MainActivity,LinearLayoutManager.HORIZONTAL,false);adapter=MediaAdapter(scope,items,::openMedia,true)},LinearLayout.LayoutParams(-1,dp(286)))}
         scope.launch{
             val result=runCatching{coroutineScope{val movies=async(Dispatchers.IO){StremioClient.catalog("movie")};val series=async(Dispatchers.IO){StremioClient.catalog("series")};movies.await() to series.await()}}
             result.onSuccess{(movies,series)->addShelf("Popular — Movies",movies.take(20));addShelf("Popular — Series",series.take(20));addShelf("Featured — Movies",movies.drop(10).take(20));status.text="Stremio catalogs"}.onFailure{status.text="Catalog error: "+it.message}
@@ -185,15 +199,47 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun settings() {
-        val root=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(28),dp(18),dp(28),dp(18))}
-        root.addView(title("Sources",25f));root.addView(copy("Xtream Codes powers Live TV and the guide. Stremio-compatible add-ons power Movies and Series."))
-        root.addView(button("Change Xtream Codes login",::xtreamDialog))
-        val addon=EditText(this).apply{hint="Stremio add-on manifest URL";setHintTextColor(Color.GRAY);setTextColor(Color.WHITE)}
-        root.addView(addon);root.addView(button("Add Stremio-compatible add-on"){val v=addon.text.toString().trim();if(v.isNotEmpty()){saveList("addons",(stringList("addons")+v).distinct());settings()}})
-        stringList("addons").forEach{v->root.addView(TextView(this).apply{text="✓ "+v+"   [remove]";setTextColor(Color.LTGRAY);textSize=16f;setPadding(0,dp(8),0,dp(8));isFocusable=true;setOnClickListener{saveList("addons",stringList("addons")-v);settings()}})}
-        val epg=EditText(this).apply{hint="XMLTV guide URL";setHintTextColor(Color.GRAY);setTextColor(Color.WHITE);setText(prefs.getString("epg_url",""))}
-        root.addView(epg);root.addView(button("Save and load guide"){prefs.edit().putString("epg_url",epg.text.toString()).apply();loadEpg(epg.text.toString())})
-        swap(ScrollView(this).apply{addView(root)},"Settings")
+        val root=LinearLayout(this).apply{orientation=LinearLayout.HORIZONTAL;setBackgroundColor(BG)}
+        val categories=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(18),dp(24),dp(12),dp(18));setBackgroundColor(Color.rgb(19,17,20))}
+        categories.addView(title("SETTINGS",18f).apply{setPadding(dp(10),0,0,dp(18))})
+        val panel=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(dp(32),dp(24),dp(34),dp(24))}
+        val panelScroll=ScrollView(this).apply{addView(panel)}
+        fun render(section:String){panel.removeAllViews();panel.addView(title(section,28f).apply{setPadding(0,0,0,dp(18))});when(section){
+            "Live TV & Guide"->settingsLive(panel)
+            "Movies & Series"->settingsAddons(panel)
+            "Playback"->settingsPlayback(panel)
+            "Appearance"->settingsAppearance(panel)
+            "Updates & About"->settingsAbout(panel)
+        }}
+        listOf("Live TV & Guide","Movies & Series","Playback","Appearance","Updates & About").forEachIndexed{i,name->categories.addView(settingsCategory(name){render(name);status.text="Settings  •  $name"},LinearLayout.LayoutParams(-1,dp(54)).apply{bottomMargin=dp(6)});if(i==0)render(name)}
+        root.addView(categories,LinearLayout.LayoutParams(dp(260),-1));root.addView(panelScroll,LinearLayout.LayoutParams(0,-1,1f));swap(root,"Settings")
+    }
+
+    private fun settingsLive(panel:LinearLayout){
+        panel.addView(settingCard("Xtream Codes account", if (xtreamClient()!=null) "Connected • ${channels.size} channels" else "Not connected", "Manage login", ::xtreamDialog))
+        val epg=EditText(this).apply{hint="XMLTV guide URL";setHintTextColor(MUTED);setTextColor(Color.WHITE);setText(prefs.getString("epg_url",""));setSingleLine();background=rounded(RAISED,8);setPadding(dp(16),0,dp(16),0)}
+        panel.addView(settingHeader("TV guide","Override the Xtream guide with an XMLTV URL."));panel.addView(epg,LinearLayout.LayoutParams(-1,dp(54)).apply{bottomMargin=dp(10)});panel.addView(button("Save and refresh guide"){prefs.edit().putString("epg_url",epg.text.toString()).apply();loadEpg(epg.text.toString())})
+    }
+    private fun settingsAddons(panel:LinearLayout){
+        panel.addView(settingHeader("Stremio-compatible add-ons","These power Movies and Series only. Live TV always stays on Xtream Codes."))
+        val addon=EditText(this).apply{hint="https://…/manifest.json";setHintTextColor(MUTED);setTextColor(Color.WHITE);setSingleLine();background=rounded(RAISED,8);setPadding(dp(16),0,dp(16),0)}
+        panel.addView(addon,LinearLayout.LayoutParams(-1,dp(54)).apply{bottomMargin=dp(10)});panel.addView(button("Add add-on"){val v=addon.text.toString().trim();if(v.isNotEmpty()){saveList("addons",(stringList("addons")+v).distinct());settings()}})
+        stringList("addons").forEach{v->panel.addView(settingCard("Installed add-on",v,"Remove"){saveList("addons",stringList("addons")-v);settings()})}
+    }
+    private fun settingsPlayback(panel:LinearLayout){
+        panel.addView(settingHeader("Player","Fast channel changes with hardware decoding and automatic decoder fallback."))
+        panel.addView(toggleCard("Hardware decoder","Use device acceleration when available","hardware_decoder",true))
+        panel.addView(toggleCard("Autoplay live channels","Begin playback immediately after selection","autoplay_live",true))
+        panel.addView(toggleCard("Prefer HLS streams","Use adaptive .m3u8 streams when the provider offers them","prefer_hls",false))
+    }
+    private fun settingsAppearance(panel:LinearLayout){
+        panel.addView(settingHeader("TV interface","Dionysus-style fixed rail, high-contrast focus states, compact guide rows."))
+        panel.addView(toggleCard("Show status bar","Show source and loading messages at the top","show_status",true){status.visibility=if(it)View.VISIBLE else View.GONE})
+        panel.addView(toggleCard("Large text","Increase labels for viewing across the room","large_text",false))
+    }
+    private fun settingsAbout(panel:LinearLayout){
+        panel.addView(settingCard("Stream Fusion TV","Version ${com.stremiolivetv.BuildConfig.VERSION_NAME}\nUpdates install from your private app release channel.","Check for updates"){UpdateChecker(this).checkOnLaunch()})
+        panel.addView(settingHeader("Sources","Movies & Series: Stremio-compatible catalogs\nLive TV & Guide: Xtream Codes / XMLTV"))
     }
 
     private fun restoreSources(){
@@ -214,10 +260,34 @@ class MainActivity : AppCompatActivity() {
     private fun saveList(k:String,v:List<String>)=prefs.edit().putString(k,JSONArray(v).toString()).apply()
     private fun swap(v:View,name:String){body.removeAllViews();body.addView(v,FrameLayout.LayoutParams(-1,-1));status.text=name}
     private fun title(v:String,s:Float)=TextView(this).apply{text=v;textSize=s;setTextColor(Color.WHITE);setTypeface(typeface,Typeface.BOLD)}
-    private fun copy(v:String)=TextView(this).apply{text=v;textSize=17f;setTextColor(Color.rgb(180,185,200));setPadding(0,dp(10),0,dp(10))}
-    private fun button(v:String,click:()->Unit)=Button(this).apply{text=v;isAllCaps=false;setTextColor(Color.WHITE);setBackgroundColor(Color.rgb(87,61,214));isFocusable=true;setOnClickListener{click()}}
+    private fun copy(v:String)=TextView(this).apply{text=v;textSize=16f;setTextColor(MUTED);setPadding(0,dp(8),0,dp(10))}
+    private fun button(v:String,click:()->Unit)=Button(this).apply{text=v;isAllCaps=false;setTextColor(Color.rgb(28,19,10));background=rounded(ACCENT,8);isFocusable=true;setTypeface(typeface,Typeface.BOLD);setOnFocusChangeListener{view,f->view.alpha=if(f)1f else .86f;view.scaleX=if(f)1.02f else 1f;view.scaleY=if(f)1.02f else 1f};setOnClickListener{click()}}
+    private fun rounded(color:Int,radius:Int)=GradientDrawable().apply{setColor(color);cornerRadius=dp(radius).toFloat()}
+    private fun styleNav(v:Button,active:Boolean){v.background=rounded(if(active)ACCENT else Color.TRANSPARENT,8);v.setTextColor(if(active)Color.rgb(31,21,12) else MUTED)}
+    private fun settingsCategory(label:String,click:()->Unit)=Button(this).apply{text=label;isAllCaps=false;gravity=Gravity.START or Gravity.CENTER_VERTICAL;textSize=15f;setTextColor(Color.WHITE);background=rounded(Color.TRANSPARENT,8);setPadding(dp(14),0,dp(10),0);isFocusable=true;setOnFocusChangeListener{v,f->v.background=rounded(if(f)RAISED else Color.TRANSPARENT,8)};setOnClickListener{click()}}
+    private fun settingHeader(heading:String,description:String)=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;setPadding(0,dp(6),0,dp(18));addView(title(heading,19f));addView(copy(description))}
+    private fun settingCard(heading:String,description:String,action:String,click:()->Unit)=LinearLayout(this).apply{
+        orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL;background=rounded(RAISED,10);setPadding(dp(20),dp(14),dp(14),dp(14))
+        val words=LinearLayout(context).apply{orientation=LinearLayout.VERTICAL;addView(title(heading,18f));addView(copy(description).apply{maxLines=3})}
+        addView(words,LinearLayout.LayoutParams(0,-2,1f));addView(button(action,click),LinearLayout.LayoutParams(dp(190),dp(50)))
+        layoutParams=LinearLayout.LayoutParams(-1,-2).apply{bottomMargin=dp(14)}
+    }
+    private fun toggleCard(heading:String,description:String,key:String,default:Boolean,changed:(Boolean)->Unit={}):View{
+        val enabled=prefs.getBoolean(key,default)
+        return settingCard(heading, description, if (enabled) "On" else "Off") {
+            val value=!prefs.getBoolean(key,default);prefs.edit().putBoolean(key,value).apply();changed(value);settings()
+        }
+    }
     private fun dp(v:Int)=(v*resources.displayMetrics.density).toInt()
     override fun onDestroy(){scope.cancel();super.onDestroy()}
+
+    companion object{
+        private val BG=Color.rgb(11,10,13)
+        private val SURFACE=Color.rgb(26,17,22)
+        private val RAISED=Color.rgb(42,28,36)
+        private val ACCENT=Color.rgb(201,162,74)
+        private val MUTED=Color.rgb(184,172,155)
+    }
 }
 
 private class TextChange(val changed:(String)->Unit):android.text.TextWatcher{
